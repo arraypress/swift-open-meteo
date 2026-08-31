@@ -106,4 +106,22 @@ final class OpenMeteoTests: XCTestCase {
         XCTAssertEqual(imperial["wind_speed_unit"], "mph")
         XCTAssertEqual(imperial["precipitation_unit"], "inch")
     }
+
+    /// The query grammar is the API contract; pin it with no network.
+    func testEndpointsCarryTheContract() {
+        func items(_ c: URLComponents) -> [String: String] {
+            Dictionary(uniqueKeysWithValues: (c.queryItems ?? []).map { ($0.name, $0.value ?? "") })
+        }
+        let clamped = items(Endpoints.forecast(at: Coordinates(latitude: 1, longitude: 2), options: ForecastOptions(days: 99)))
+        XCTAssertEqual(clamped["forecast_days"], "16")
+        XCTAssertNil(clamped["hourly"])
+        let imperial = items(Endpoints.forecast(at: Coordinates(latitude: 1, longitude: 2), options: ForecastOptions(days: 0, includeHourly: true, units: .imperial)))
+        XCTAssertEqual(imperial["forecast_days"], "1")
+        XCTAssertEqual(imperial["temperature_unit"], "fahrenheit")
+        XCTAssertEqual(imperial["wind_speed_unit"], "mph")
+        XCTAssertEqual(items(Endpoints.geocode("Bang kok", count: 3, language: "en"))["count"], "3")
+        let past = items(Endpoints.history(at: Coordinates(latitude: 1, longitude: 2), from: "2026-01-01", to: "2026-01-31", units: .metric))
+        XCTAssertEqual(past["start_date"], "2026-01-01")
+        XCTAssertNil(past["temperature_unit"])
+    }
 }
